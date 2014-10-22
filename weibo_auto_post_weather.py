@@ -8,6 +8,8 @@ import urllib2
 import time
 import datetime
 import urllib
+import random
+import pycurl
 
 SOURCE = '3142741993';
 APP_KEY = '3142741993';#在新浪开放平台的app_key
@@ -20,25 +22,29 @@ def get_weather(city_name):
     #print weather.encode('utf-8')
     return '#武汉天气# ' + weather + ' @华中大导航网 所在城市天气 http://www.hust.cc/'
 
-def post_weather_weibo():
-    req = 'https://api.weibo.com/2/statuses/update.json'
-    #http://atool.org/apis/weather.for.api.php?q=%E6%AD%A6%E6%B1%89
-    post_dict = {
-        'source':SOURCE,
-        'access_token':ACCESS_TOKEN,
-        'status':get_weather('%E6%AD%A6%E6%B1%89')
-    }
-    post_data = urllib.urlencode(post_dict)
-    f = urllib2.urlopen(req, post_data)
-    content = f.read()
-    return content
+def post_weibo(content):
+    if content:
+        filename = r'/alidata/batch/images/' + str(random.randint(1, 26)) + '.png'
+        print filename
+        pc = pycurl.Curl()  
+        pc.setopt(pycurl.POST, 1)  
+        pc.setopt(pycurl.URL, 'https://api.weibo.com/2/statuses/upload.json')  
+        pc.setopt(pycurl.HTTPPOST, [('pic', (pc.FORM_FILE, filename)),   
+                                    ('source', (pc.FORM_CONTENTS, SOURCE)),
+                                    ('access_token', (pc.FORM_CONTENTS, ACCESS_TOKEN)),
+                                    ('status', (pc.FORM_CONTENTS, urllib2.quote(content)))])
+        pc.perform()  
+        response_code = pc.getinfo(pycurl.RESPONSE_CODE)  
+        pc.close()
+        return response_code
+    return 'no content'
 
 
 print 'start auto'
 while True:
     try:
         time.sleep(1)
-        post_weather_weibo()
+        post_weibo(get_weather('%E6%AD%A6%E6%B1%89'))
         #print get_weather('%E6%AD%A6%E6%B1%89')
         print 'post success'
     except Exception,ex:  
